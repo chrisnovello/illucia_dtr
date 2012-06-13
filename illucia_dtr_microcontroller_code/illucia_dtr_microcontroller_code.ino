@@ -7,7 +7,7 @@
 /*
  illucia dtr
  "deterritorializer"
- microcontroller code version 0.8
+ microcontroller code version 0.9
  arduino style code (with Teensy++ as the intended target at the moment)
  
  When there is a change in state, send a message to the computer specifiying the change. 
@@ -65,6 +65,8 @@ int jackPins[] = {
 int ledPins[] = {
     24, 25, 26, 27
 };
+
+
 
 boolean needsHandshake = true; //used to determine if communication has been initiated with the device or not
 
@@ -179,7 +181,15 @@ public:
         //factor out noise
         int difference = _previousRead - reading;
         
-        if (abs(difference) > 2) {
+        if (abs(difference) > 6) { //simple software way of factoring out fluctations in reading due to noise/power  
+            
+            //check for edge cases, so pot doesn't miss full CW or CCW positions given software filtering
+            if (reading <= 6) {
+             reading = 0; 
+            } else if (reading >= 1017) {
+              reading = 1023;
+            }
+            
             
             //send update!
             byte bytesToSend[MESSAGE_SIZE] = {
@@ -403,5 +413,19 @@ void loop() {
 
 
 
+//Note to self: 1st prototype had this pinout:
 
-
+/*
+int digitalElementPins[] = {
+  18, 19, 20, 21, 28, 29, 30, 31
+}; //pins hooked up to "digital" elements like buttons / switches. 
+int continuousElementPins[] = {
+  45, 44, 43, 42, 40, 39
+};
+int jackPins[] = {
+  17, 16, 15, 13, 12, 11, 10, 9, 32, 33, 34, 35, 8, 7, 5, 4
+};
+int ledPins[] = {
+  24, 25, 26, 27
+};
+*/
