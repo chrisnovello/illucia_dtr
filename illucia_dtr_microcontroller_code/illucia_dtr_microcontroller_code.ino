@@ -41,8 +41,9 @@ int const NUMBER_OF_DIGITAL_ELEMENTS = 8; // how many buttons & switches?
 int const NUMBER_OF_CONTINUOUS_ELEMENTS = 6; // how many continuous controls?
 int const NUMBER_OF_JACKS = 16; //how many jacks are on this device?
 
+//debouncing&smoothing
 int const DEBOUNCE_DELAY = 20;//how many MS should you wait for a debounced value?
-//int const CONTINUOUS_DELAY = 2; //How frequently should we poll the continuous pins (because serial will send a LOT OF messages as these change, it might overwhelm the serial port)
+int const ANALOG_CHANGE_THRESHOLD = 6; //used for software smoothing of analogRead jitter
 
 //For incoming data to microcontroller:
 byte const RESET_TYPE = 0; //used to tell the device to go back to waiting for a handshake
@@ -181,12 +182,12 @@ public:
         //factor out noise
         int difference = _previousRead - reading;
         
-        if (abs(difference) > 6) { //simple software way of factoring out fluctations in reading due to noise/power  
+        if (abs(difference) > ANALOG_CHANGE_THRESHOLD) { //simple software way of factoring out fluctations in reading due to noise/power  
             
             //check for edge cases, so pot doesn't miss full CW or CCW positions given software filtering
-            if (reading <= 6) {
+            if (reading <= ANALOG_CHANGE_THRESHOLD) {
              reading = 0; 
-            } else if (reading >= 1017) {
+            } else if (reading >= 1023 - ANALOG_CHANGE_THRESHOLD) {
               reading = 1023;
             }
             
