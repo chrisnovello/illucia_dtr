@@ -1,3 +1,7 @@
+//Change these values if you'd like to change illuciaConnect's ports!
+final int OSC_INCOMING_PORT = 12000;
+final int OSC_OUTGOING_PORT = 12001;
+
 //Todo: 
 
 //automatically get device info at boot.
@@ -62,8 +66,8 @@ void setup() {
   frameRate(1); //useless.. at the moment, drawing is disabled in this sketch. Might get readded later though
 
   //initialize OSC and serial 
-  oscP5 = new OscP5(this, 12000);
-  myRemoteLocation = new NetAddress("127.0.0.1", 12001);
+  oscP5 = new OscP5(this, OSC_INCOMING_PORT);
+  myRemoteLocation = new NetAddress("127.0.0.1", OSC_OUTGOING_PORT);
   println(Serial.list());
 
   String port = Serial.list()[0];
