@@ -322,22 +322,19 @@ void setConnectionStatus(boolean isConnected) {
   textAlign(CENTER, CENTER);
   fill(0);
   if (isConnected) {
-    if (connectionStatusImages[1] != null) {  
-
-      text("Connected!", width/2, height - (height/8));
+    if (connectionStatusImages[1] != null) {  //the image loaded successfully..
       image(connectionStatusImages[1], width/2 - connectionStatusImages[0].width/2, height/2 - connectionStatusImages[0].height/2);
     }
-    else {
+    else { //the image didn't load, just use text
       text("Connected!", width/2, height/2);
     }
   } 
   else {    //still waiting for connection
-    //Processing doesn't throw errors on file not found, so make sure the array was loaded
+    //Processing doesn't throw errors on file not found, so make sure the image was loaded
     if (connectionStatusImages[0] != null) {  
       image(connectionStatusImages[0], width/2 - connectionStatusImages[0].width/2, height/2 - connectionStatusImages[0].height/2);
-      text("Connecting...", width/2, height - (height/8));
     } 
-    else 
+    else //the image didn't load, just use text
       text("Connecting...", width/2, height/2);
   }
   redraw(); //need to tell the sketch to redraw() because of the noLoop() call made earlier
