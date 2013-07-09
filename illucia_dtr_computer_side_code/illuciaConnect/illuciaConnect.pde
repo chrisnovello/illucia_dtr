@@ -54,13 +54,21 @@ float[] digitalElements;
 float[] continuousElements;
 Jack[] jacks; 
 
+//Images to show connected/disconnected status
+PImage[] connectionStatusImages;
+
 void setup() {
   size(300, 300);  
-  background(100);
+  background(255);
 
-  //Display a status message 
-  textAlign(CENTER, CENTER);
-  text("Connecting...", width/2, height/2);
+  connectionStatusImages = new PImage[2];
+
+  //try to load images
+  connectionStatusImages[0] = loadImage("illuciaNotConnected.png");
+  connectionStatusImages[1] = loadImage("illuciaConnected.png");
+  //call the helper that renders text and images
+  setConnectionStatus(false);
+
   noLoop(); //disable the draw() loop, as this program is event driven for now
   //low frame rates = less CPU usage. 
   frameRate(1); //useless.. at the moment, drawing is disabled in this sketch. Might get readded later though
@@ -109,10 +117,7 @@ void serialEvent(Serial port) {
       println("Bytes available after handshake and clear: "+serialConnection.available());
 
       //after handshake, update the display
-      background(0);
-      textAlign(CENTER, CENTER);
-      text("Connected!", width/2, height/2);
-      redraw(); //need to tell the sketch to redraw() because of the noLoop() call made earlier
+      setConnectionStatus(true);
     }
   }
 
@@ -221,7 +226,7 @@ void oscEvent(OscMessage messageReceived) {
 
       int mappedLEDBrightness = int(constrain(map(messageReceived.get(0).floatValue(), OSCLow, OSCHigh, 0.0, 255), 0, 255));
       int LEDNumber = Integer.parseInt(msgSplit[3]) - 1;
-      
+
       setLED(LEDNumber, mappedLEDBrightness);
     }
 
@@ -309,6 +314,36 @@ void setLED(int LEDNumber, int brightnessValue) {
 }
 
 
+
+//Helper method for drawing status updates, telling the user if an illucia unit connected
+
+void setConnectionStatus(boolean isConnected) {
+  background(255);
+  textAlign(CENTER, CENTER);
+  fill(0);
+  if (isConnected) {
+    if (connectionStatusImages[1] != null) {  
+
+      text("Connected!", width/2, height - (height/8));
+      image(connectionStatusImages[1], width/2 - connectionStatusImages[0].width/2, height/2 - connectionStatusImages[0].height/2);
+    }
+    else {
+      text("Connected!", width/2, height/2);
+    }
+  } 
+  else {    //still waiting for connection
+    //Processing doesn't throw errors on file not found, so make sure the array was loaded
+    if (connectionStatusImages[0] != null) {  
+      image(connectionStatusImages[0], width/2 - connectionStatusImages[0].width/2, height/2 - connectionStatusImages[0].height/2);
+      text("Connecting...", width/2, height - (height/8));
+    } 
+    else 
+      text("Connecting...", width/2, height/2);
+  }
+  redraw(); //need to tell the sketch to redraw() because of the noLoop() call made earlier
+}
+
+
 //Calls code upon program's closing. Tells device to await a new handshake
 private void prepareExitHandler () {
 
@@ -333,3 +368,4 @@ private void prepareExitHandler () {
   }
   ));
 }	 
+
