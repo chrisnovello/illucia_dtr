@@ -6,4 +6,4 @@ It uses physical jacks and patch cables as an interface for making connections b
 
 It is open source everything: hardware, software (microcontroller & computer side), and design.
 
-Visit [illucia.com](http://www.illucia.com) for more information and the [user guide](http://www.illucia.com/guide.html).
+For more info, visit [illucia.com](http://www.illucia.com) and read the [FAQ](http://www.illucia.com/faq/) and [user guide](http://www.illucia.com/guide/).
