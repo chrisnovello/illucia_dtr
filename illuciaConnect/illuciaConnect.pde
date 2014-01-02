@@ -8,6 +8,7 @@ final int OSC_OUTGOING_PORT = 12001;
 //make model of device OO, support multiple devices plugged in at once...
 //make it so one can connect illucia devices after launch
 //make it so user selects device from serial list..? and has connect/disconnect buttons in the utility?
+//create a keepalive signal on the illucia unit, then automatically close the serial port if a timepassedSinceLastPacket > keepalive
 
 import processing.serial.*;
 import oscP5.*;
@@ -38,7 +39,8 @@ final byte JACK_TYPE = 2; //Jack connections & disconnections
 final byte RESET_TYPE = 0;
 final byte LED_TYPE = 1;
 ///
-boolean hasConnected = false; //Has the device successfully completed a handshake with this program? 
+boolean serialConnected = false; // has illucaConnect initialized a serial connection 
+boolean handShakeCompleted = false; //has the device successfully completed a handshake with this program? 
 
 //TODO: automatically get this from device at boot.
 //Device details... 
@@ -73,14 +75,12 @@ void setup() {
   //low frame rates = less CPU usage. 
   frameRate(1); //useless.. at the moment, drawing is disabled in this sketch. Might get readded later though
 
-  //initialize OSC and serial 
+  //initialize OSC 
   oscP5 = new OscP5(this, OSC_INCOMING_PORT);
   myRemoteLocation = new NetAddress("127.0.0.1", OSC_OUTGOING_PORT);
-  println(Serial.list());
 
-  String port = Serial.list()[0];
-  serialConnection = new Serial(this, port, 115200);
-  serialConnection.buffer(MESSAGE_SIZE); //let the serial port know the number of bytes to check for with each mesage
+  //initialize serial
+  connectOverSerial();
 
   //Setup the model of the device
   //buttons&switches
@@ -94,6 +94,7 @@ void setup() {
   }
 
   prepareExitHandler(); //sets up an event handled that is called upon program's closing. Tells device to reset to a new state and await a new handshake
+  
 }
 
 
@@ -103,14 +104,23 @@ void draw() {
 
 //This gets called by the serial library when something on the device changes
 void serialEvent(Serial port) {
+
   byte[] incoming = new byte[MESSAGE_SIZE];
 
-  serialConnection.readBytes(incoming);
+  if (!handShakeCompleted) { //has this device connected before? if not, check for a initial handshake 
 
-  if (!hasConnected) { //has this device connected before? if not, check for a initial handshake 
+    println("Starting handshake..");
+
+    /* if this is the first serialEvent, 
+     make sure the connection has enough time to get setup before reading
+     */
+    delay(750); 
+
+    serialConnection.readBytes(incoming);
+
     if (incoming[0] == 'd') {
       serialConnection.clear();        
-      hasConnected = true;
+      handShakeCompleted = true;
 
       serialConnection.write('P');
       println("Handshake Complete");
@@ -122,91 +132,98 @@ void serialEvent(Serial port) {
   }
 
   else { //Initial handshake has already been established
+  
+  
+    //println("Available: " + serialConnection.available());
+    
+    while(serialConnection.available() > 0) {
+     
+      serialConnection.readBytes(incoming);
 
-    OscMessage messageToSend;
+      OscMessage messageToSend;
+      switch(incoming[0]) { //Switch the serial bytes based on the byte that specifies message type
 
-    switch(incoming[0]) { //Switch the serial bytes based on the byte that specifies message type
+      case CONTINUOUS_TYPE:
 
-    case CONTINUOUS_TYPE:
+        //what number element(knob) is this?
+        int continuousElementIndex = incoming[1];
 
-      //what number element(knob) is this?
-      int continuousElementIndex = incoming[1];
+        float contValue = int(incoming[2] << 8) + int(incoming[3]);
+        contValue = map(contValue, microcontrollerLow, microcontrollerHigh, OSCLow, OSCHigh);
 
-      float contValue = int(incoming[2] << 8) + int(incoming[3]);
-      contValue = map(contValue, microcontrollerLow, microcontrollerHigh, OSCLow, OSCHigh);
+        //update model of device
+        continuousElements[continuousElementIndex] = contValue;
 
-      //update model of device
-      continuousElements[continuousElementIndex] = contValue;
+        //Now, broadcast the value change over OSC
 
-      //Now, broadcast the value change over OSC
+        //control elements are indexed at 0 on the hardware, but 1 in software, so add 1 when sending this value out
+        messageToSend = new OscMessage("/"+deviceName+"/Continuous/"+(continuousElementIndex + 1));  
+        messageToSend.add(contValue);
+        oscP5.send(messageToSend, myRemoteLocation);
 
-      //control elements are indexed at 0 on the hardware, but 1 in software, so add 1 when sending this value out
-      messageToSend = new OscMessage("/"+deviceName+"/Continuous/"+(continuousElementIndex + 1));  
-      messageToSend.add(contValue);
-      oscP5.send(messageToSend, myRemoteLocation);
-
-      //println("ID: "+ incoming[1] + " value: "  +contValue);
-      break;
-
-
-    case DIGITAL_TYPE:
-
-      //what number element(button or switch) is this?
-      int digitalElementIndex = incoming[1];
-
-      float value = 0.0;
-
-      if (incoming[2] == 1) { //switch or button is activated
-        value = 1.0;
-      } 
-      else if (incoming[2] == 0) { //switch or button is off
-        value = 0.0;
-      }
-
-      //update model of device
-      digitalElements[digitalElementIndex] = value;
-
-      //now, broadcast the value change over OSC
-
-      //control element numbers are indexed at 0 on the hardware, but 1 in software, so add 1
-      messageToSend = new OscMessage("/"+deviceName+"/Digital/"+(digitalElementIndex+1));  
-      messageToSend.add(value);
-      oscP5.send(messageToSend, myRemoteLocation);
-
-      //println("Button ID: "+ incoming[1] + " value: "  +incoming[2]);    
-      break;
+        //println("ID: "+ incoming[1] + " value: "  +contValue);
+        break;
 
 
-    case JACK_TYPE:
-      //There was a jack connection or disconnection - 
-      //update this utility's model of the patchbay accordingly, so that it can forward messages based on the state of patch bay & cables.
+      case DIGITAL_TYPE:
 
-      Jack jack1 = jacks[incoming[1]]; //main jack being checked for updates
-      Jack jack2 = jacks[incoming[2]]; //the jack that jack1 is connected to.
+        //what number element(button or switch) is this?
+        int digitalElementIndex = incoming[1];
 
-      float isJackPatched = 1.0; //defaulting to 1.0, which assumes most events will involve connection
+        float value = 0.0;
 
-      if (incoming[3] == 1) { //there is a new connection
-        jack1.connections.add(jack2);
-      } 
-      else {  //a connection was broken
-        jack1.connections.remove(jack2);
-
-        if (jack1.connections.isEmpty()) { // if this jack isn't connected to anything else..
-          isJackPatched = 0.0;
+        if (incoming[2] == 1) { //switch or button is activated
+          value = 1.0;
+        } 
+        else if (incoming[2] == 0) { //switch or button is off
+          value = 0.0;
         }
+
+        //update model of device
+        digitalElements[digitalElementIndex] = value;
+
+        //now, broadcast the value change over OSC
+
+        //control element numbers are indexed at 0 on the hardware, but 1 in software, so add 1
+        messageToSend = new OscMessage("/"+deviceName+"/Digital/"+(digitalElementIndex+1));  
+        messageToSend.add(value);
+        oscP5.send(messageToSend, myRemoteLocation);
+
+        //println("Button ID: "+ incoming[1] + " value: "  +incoming[2]);    
+        break;
+
+
+      case JACK_TYPE:
+        //There was a jack connection or disconnection - 
+        //update this utility's model of the patchbay accordingly, so that it can forward messages based on the state of patch bay & cables.
+
+        Jack jack1 = jacks[incoming[1]]; //main jack being checked for updates
+        Jack jack2 = jacks[incoming[2]]; //the jack that jack1 is connected to.
+
+        float isJackPatched = 1.0; //defaulting to 1.0, which assumes most events will involve connection
+
+        if (incoming[3] == 1) { //there is a new connection
+          jack1.connections.add(jack2);
+        } 
+        else {  //a connection was broken
+          jack1.connections.remove(jack2);
+
+          if (jack1.connections.isEmpty()) { // if this jack isn't connected to anything else..
+            isJackPatched = 0.0;
+          }
+        }
+
+        //broadcast the connection or disconnection over OSC. (indicate jack index in the OSC message address)
+        //the argument is 1.0 if the jack has connections, and 0.0 if it doesn't
+        //todo: consider adding a second argument: an index list of all jacks connected? (if you do, dont forget to change it in the PollDeviceState too! refactor all this..)
+        messageToSend = new OscMessage("/"+deviceName+"/JackIsPatched/"+(jack1.getID()+1)); //the hardware indexes from 0, so add 1 because software indexes from 0
+        messageToSend.add(isJackPatched);    
+        oscP5.send(messageToSend, myRemoteLocation);
+
+        //     println("JACK ID: "+ jack1.getID() + "Other JACK ID: "+ jack2.getID() +" connection: "  +incoming[3]);
+        //     println("connections:"+jack1.connections.size() );
+        break;
       }
-
-      //broadcast the connection or disconnection over OSC. (indicate jack index in the OSC message address)
-      //the argument is 1.0 if the jack has connections, and 0.0 if it doesn't
-      //todo: consider adding a second argument: an index list of all jacks connected? (if you do, dont forget to change it in the PollDeviceState too! refactor all this..)
-      messageToSend = new OscMessage("/"+deviceName+"/JackIsPatched/"+(jack1.getID()+1)); //the hardware indexes from 0, so add 1 because software indexes from 0
-      messageToSend.add(isJackPatched);    
-      oscP5.send(messageToSend, myRemoteLocation);
-
-      //     println("JACK ID: "+ jack1.getID() + "Other JACK ID: "+ jack2.getID() +" connection: "  +incoming[3]);
-      //     println("connections:"+jack1.connections.size() );
-      break;
     }
   }
 }
@@ -335,14 +352,14 @@ void setConnectionStatus(boolean isConnected) {
       image(connectionStatusImages[0], width/2 - connectionStatusImages[0].width/2, height/2 - connectionStatusImages[0].height/2);
     } 
     else //the image didn't load, just use text
-      text("Connecting...", width/2, height/2);
+    text("Connecting...", width/2, height/2);
   }
   redraw(); //need to tell the sketch to redraw() because of the noLoop() call made earlier
 }
 
 
 //Calls code upon program's closing. Tells device to await a new handshake
-private void prepareExitHandler () {
+private void prepareExitHandler() {
 
   Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
     public void run () {
@@ -365,4 +382,31 @@ private void prepareExitHandler () {
   }
   ));
 }	 
+
+
+
+void connectOverSerial() {
+
+  String[] availableSerialPorts = Serial.list();
+
+  for (int i = 0; i < availableSerialPorts.length; i++) {
+
+    if (!serialConnected) {
+
+      boolean connectionFailed = false;
+      
+      try {
+        serialConnection = new Serial(this, availableSerialPorts[i], 115200);
+        if (serialConnection.available() >= MESSAGE_SIZE) {
+          serialConnected = true;
+          serialConnection.buffer(MESSAGE_SIZE); //let the serial port know the number of bytes to check for with each mesage
+        }
+      } 
+      catch (RuntimeException e) {
+        //println("Couldn't connect on " + availableSerialPorts[i] + " - Trying another port");
+      }
+
+    }
+  }
+}
 
