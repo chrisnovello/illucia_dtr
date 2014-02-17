@@ -94,9 +94,7 @@ void setup() {
   }
 
   prepareExitHandler(); //sets up an event handled that is called upon program's closing. Tells device to reset to a new state and await a new handshake
-  
 }
-
 
 
 void draw() {
@@ -107,7 +105,7 @@ void serialEvent(Serial port) {
 
   byte[] incoming = new byte[MESSAGE_SIZE];
 
-  if (!handShakeCompleted) { //has this device connected before? if not, check for a initial handshake 
+  if (!handShakeCompleted && serialConnection.available () >= incoming.length && serialConnection.available() % incoming.length == 0) { //has this device connected before? if not, check for a initial handshake 
 
     println("Starting handshake..");
 
@@ -119,8 +117,6 @@ void serialEvent(Serial port) {
     serialConnection.readBytes(incoming);
 
     if (incoming[0] == 'd') {
-      serialConnection.clear();        
-      handShakeCompleted = true;
 
       serialConnection.write('P');
       println("Handshake Complete");
@@ -128,22 +124,34 @@ void serialEvent(Serial port) {
 
       //after handshake, update the display
       setConnectionStatus(true);
+      handShakeCompleted = true;
+
+      serialConnection.clear();
     }
   }
 
   else { //Initial handshake has already been established
-  
-  
+
     //println("Available: " + serialConnection.available());
-    
-    while(serialConnection.available() > 0) {
-     
+
+    while (serialConnection.available () >= incoming.length && serialConnection.available() % incoming.length == 0) {
+
       serialConnection.readBytes(incoming);
 
+
+      /*
+      println("reading");
+       for (int i = 0; i < incoming.length; i++) {
+       println(i+"'s value: "+incoming[i]);
+       } 
+       */
+
       OscMessage messageToSend;
+
       switch(incoming[0]) { //Switch the serial bytes based on the byte that specifies message type
 
       case CONTINUOUS_TYPE:
+
 
         //what number element(knob) is this?
         int continuousElementIndex = incoming[1];
@@ -228,7 +236,6 @@ void serialEvent(Serial port) {
   }
 }
 
-
 //handles patchbay forwarding, LED brightness, and  
 void oscEvent(OscMessage messageReceived) {
 
@@ -298,6 +305,7 @@ void oscEvent(OscMessage messageReceived) {
     }
   }
 }
+
 
 
 //Class used to keep track of connections
@@ -381,9 +389,7 @@ private void prepareExitHandler() {
     }
   }
   ));
-}	 
-
-
+}   
 
 void connectOverSerial() {
 
@@ -394,7 +400,7 @@ void connectOverSerial() {
     if (!serialConnected) {
 
       boolean connectionFailed = false;
-      
+
       try {
         serialConnection = new Serial(this, availableSerialPorts[i], 115200);
         if (serialConnection.available() >= MESSAGE_SIZE) {
@@ -405,8 +411,6 @@ void connectOverSerial() {
       catch (RuntimeException e) {
         //println("Couldn't connect on " + availableSerialPorts[i] + " - Trying another port");
       }
-
     }
   }
 }
-
