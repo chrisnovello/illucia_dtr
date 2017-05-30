@@ -66,3 +66,7 @@ https://www.digikey.com
 PJRC
 https://www.pjrc.com//
 
+== Digikey BOM ==
+
+http://www.digikey.com/short/3dztqt
+
