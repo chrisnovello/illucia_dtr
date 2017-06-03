@@ -402,7 +402,7 @@ void connectOverSerial() {
       boolean connectionFailed = false;
 
       try {
-        serialConnection = new Serial(this, availableSerialPorts[i], 115200);
+        serialConnection = new Serial(this, availableSerialPorts[i], 9600);
         if (serialConnection.available() >= MESSAGE_SIZE) {
           serialConnected = true;
           serialConnection.buffer(MESSAGE_SIZE); //let the serial port know the number of bytes to check for with each mesage
