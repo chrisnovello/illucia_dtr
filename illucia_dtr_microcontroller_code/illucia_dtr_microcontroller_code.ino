@@ -346,7 +346,8 @@ void setup() {
 
 
 void loop() {
-    
+
+    digitalWrite(6, HIGH);
     if (needsHandshake) {
         
         //do serial handshake. 
