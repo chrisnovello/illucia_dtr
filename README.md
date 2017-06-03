@@ -16,3 +16,5 @@ Requires installation of [Teensy extension](https://www.pjrc.com/teensy/td_downl
 On my computer, the serial device shows up as `/dev/cu.usbmodem1421`
 Client software cannot connect to serial device...how to connect manually?
 It's very important to solider the header pins on. Simply resting them in the holes doesn't make an electrical connection.
+
+Baud setting is incorrect. Should be 9600. PR submitted.
