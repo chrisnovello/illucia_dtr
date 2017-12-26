@@ -28,7 +28,7 @@ LED Lens (4) [https://www.digikey.com/products/en?keywords=593-3000R]
 	593-3000R
 
 ESD Resistors (16) [nb] 
-	220 ohms
+	100 ohms
 
 LED Resistors [nb]
 	1k
