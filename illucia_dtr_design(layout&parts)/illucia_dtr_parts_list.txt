@@ -2,52 +2,71 @@ illucia parts list:
 
 ========================================
 
-Enclosure (1)
+Enclosure (1) [acrylic, nb]
 	Hammond 1590DD
+        http://www.alliedelec.com/hammond-manufacturing-1590dd/70165498/
 
-Banana Jack (16)
+Banana Jack (16) [nb]
 	Emerson/Johnson 108-09xx-001 
 
-Toggle Switch (4) 
+Toggle Switch (4) [https://www.digikey.com/product-detail/en/nkk-switches/M2012SS1W01/360-1801-ND/1006880]
 	NKK M2012SS1W01 (alt: M2012ES1W01 has bat switches)
 
-Momentary Pushbutton (4)
+Momentary Pushbutton (4) [https://www.digikey.com/products/en?keywords=8125SHZBE]
 	C&K 8125SHZBE 
 
-Red Button Cap (4)
+Red Button Cap (4) [https://www.digikey.com/products/en?keywords=%20801803000]
 	C&K 801803000 
 
-Conical Dress Nut (4)
+Conical Dress Nut (4) [https://www.digikey.com/product-detail/en/nkk-switches/AT512H/360-3215-ND/1045995]
 	NKK AT512H 
 
-LED (4)
+LED (4) [nb]
 	Diffused Red
 
-LED Lens (4)
+LED Lens (4) [https://www.digikey.com/products/en?keywords=593-3000R]
 	593-3000R
 
-ESD Resistors (16)
-	220 ohms
+ESD Resistors (16) [nb] 
+	100 ohms
 
-LED Resistors
+LED Resistors [nb]
 	1k
 
-Potentiometers (6)
-	RV16AF-42-15R1-	10k Linear Alpha Single-Gang 16mm Right Angle PC Mount Long-Pin
+Potentiometers (6) [https://www.mammothelectronics.com/collections/alpha-pcb-mount/products/alpha-16mm-single-gang-long-pin-right-angle-pc-mount-logarithmic-a?variant=25347964039]
+	RV16AF-42-15R1-A10k Linear Alpha Single-Gang 16mm Right Angle PC Mount Long-Pin
 
-Knobs (6)
+Knobs (6) [https://www.digikey.com/products/en?keywords=506-PKD70B1%2F4]
 	506-PKD70B1/4
 
-USB A Receptacle (1)
+USB A Receptacle (1) [https://www.digikey.com/products/en?keywords=1734366-2]
 	1734366-2
  
-Amphenol Rugged Mini USB Receptacle (1)
+Amphenol Rugged Mini USB Receptacle (1) [https://www.digikey.com/products/en?keywords=MUSB-B551-04]
 	MUSB-B551-04
 
-Screws (2)
+Screws (2) [nb]
 	M2.5 (I think… whatever fits amphenol's threads)
 
-Teensy++ w/header pins (1)
+Teensy++ w/header pins (1) [https://www.pjrc.com/store/teensypp.html]
 	
-Female Headers20 pin .1" spacing female headers (2)
+Female Headers20 pin .1" spacing female headers (2) [nb]
+
+== Distributors ==
+
+NKK Switches
+http://www.nkkswitches.com/
+
+C&K Switches
+http://www.ckswitches.com/
+
+Digikey Electronics
+https://www.digikey.com
+
+PJRC
+https://www.pjrc.com//
+
+== Digikey BOM ==
+
+http://www.digikey.com/short/3dztqt
 
