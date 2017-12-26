@@ -66,8 +66,8 @@ void setup() {
   connectionStatusImages = new PImage[2];
 
   //try to load images
-  connectionStatusImages[0] = loadImage("illuciaNotConnected.png");
-  connectionStatusImages[1] = loadImage("illuciaConnected.png");
+  //connectionStatusImages[0] = loadImage("illuciaNotConnected.png");
+  //connectionStatusImages[1] = loadImage("illuciaConnected.png");
   //call the helper that renders text and images
   setConnectionStatus(false);
 
@@ -112,7 +112,7 @@ void serialEvent(Serial port) {
     /* if this is the first serialEvent, 
      make sure the connection has enough time to get setup before reading
      */
-    delay(750); 
+    delay(2000); 
 
     serialConnection.readBytes(incoming);
 
@@ -137,21 +137,18 @@ void serialEvent(Serial port) {
     while (serialConnection.available () >= incoming.length && serialConnection.available() % incoming.length == 0) {
 
       serialConnection.readBytes(incoming);
-
-
-      /*
-      println("reading");
-       for (int i = 0; i < incoming.length; i++) {
-       println(i+"'s value: "+incoming[i]);
-       } 
-       */
-
+      
+      //println("reading");
+      // for (int i = 0; i < incoming.length; i++) {
+      // println(i+"'s value: "+incoming[i]);
+      // } 
+     
       OscMessage messageToSend;
 
+      //println("Ready to send OSC messages");
+
       switch(incoming[0]) { //Switch the serial bytes based on the byte that specifies message type
-
       case CONTINUOUS_TYPE:
-
 
         //what number element(knob) is this?
         int continuousElementIndex = incoming[1];
@@ -165,11 +162,13 @@ void serialEvent(Serial port) {
         //Now, broadcast the value change over OSC
 
         //control elements are indexed at 0 on the hardware, but 1 in software, so add 1 when sending this value out
-        messageToSend = new OscMessage("/"+deviceName+"/Continuous/"+(continuousElementIndex + 1));  
+        String msgC = "/"+deviceName+"/Continuous/"+(continuousElementIndex + 1);
+        messageToSend = new OscMessage(msgC);  
         messageToSend.add(contValue);
+        //println(msgC + " " + contValue);
         oscP5.send(messageToSend, myRemoteLocation);
 
-        //println("ID: "+ incoming[1] + " value: "  +contValue);
+        //println("Pot ID: "+ incoming[1] + " value: "  +contValue);
         break;
 
 
@@ -193,8 +192,10 @@ void serialEvent(Serial port) {
         //now, broadcast the value change over OSC
 
         //control element numbers are indexed at 0 on the hardware, but 1 in software, so add 1
-        messageToSend = new OscMessage("/"+deviceName+"/Digital/"+(digitalElementIndex+1));  
+        String msgD = "/"+deviceName+"/Digital/"+(digitalElementIndex+1);
+        messageToSend = new OscMessage(msgD);  
         messageToSend.add(value);
+        //println(msgD + " " + value);
         oscP5.send(messageToSend, myRemoteLocation);
 
         //println("Button ID: "+ incoming[1] + " value: "  +incoming[2]);    
@@ -224,8 +225,10 @@ void serialEvent(Serial port) {
         //broadcast the connection or disconnection over OSC. (indicate jack index in the OSC message address)
         //the argument is 1.0 if the jack has connections, and 0.0 if it doesn't
         //todo: consider adding a second argument: an index list of all jacks connected? (if you do, dont forget to change it in the PollDeviceState too! refactor all this..)
-        messageToSend = new OscMessage("/"+deviceName+"/JackIsPatched/"+(jack1.getID()+1)); //the hardware indexes from 0, so add 1 because software indexes from 0
+        String msgJ = "/"+deviceName+"/JackIsPatched/"+(jack1.getID()+1);
+        messageToSend = new OscMessage(msgJ); //the hardware indexes from 0, so add 1 because software indexes from 0
         messageToSend.add(isJackPatched);    
+        //println(msgJ + " " + isJackPatched);
         oscP5.send(messageToSend, myRemoteLocation);
 
         //     println("JACK ID: "+ jack1.getID() + "Other JACK ID: "+ jack2.getID() +" connection: "  +incoming[3]);
@@ -246,9 +249,8 @@ void oscEvent(OscMessage messageReceived) {
 
     if (msgSplit[2].equals("LED")) { //set an LED
 
-      //println(Integer.parseInt(msgSplit[3]) + " " +mappedLEDBrightness);
-
-      int mappedLEDBrightness = int(constrain(map(messageReceived.get(0).floatValue(), OSCLow, OSCHigh, 0.0, 255), 0, 255));
+      OscArgument fVal = messageReceived.get(0); //<>//
+      int mappedLEDBrightness = int(constrain(map(fVal.floatValue(), OSCLow, OSCHigh, 0.0, 255), 0, 255)); //<>//
       int LEDNumber = Integer.parseInt(msgSplit[3]) - 1;
 
       setLED(LEDNumber, mappedLEDBrightness);
@@ -264,8 +266,10 @@ void oscEvent(OscMessage messageReceived) {
       for (int i = 0; i < connections.size(); i++) {
         int idToForwardTo = connections.get(i).getID() + 1;
 
-        OscMessage messageBeingSent = new OscMessage("/"+deviceName+"/InputJack/"+ idToForwardTo);  
+        String msgI = "/"+deviceName+"/InputJack/"+ idToForwardTo;
+        OscMessage messageBeingSent = new OscMessage(msgI);  
         messageBeingSent.setArguments(messageReceived.arguments());
+        //println(messageBeingSent);
         oscP5.send(messageBeingSent, myRemoteLocation);
       }
     }
@@ -306,8 +310,6 @@ void oscEvent(OscMessage messageReceived) {
   }
 }
 
-
-
 //Class used to keep track of connections
 class Jack {
 
@@ -324,21 +326,16 @@ class Jack {
   }
 }
 
-
-
 //Helper - sends a brightness value to an LED.  
 void setLED(int LEDNumber, int brightnessValue) {
-
   byte[] bytesToSend = new byte[3]; 
-
+  //println(LEDNumber + " " + brightnessValue);
   //first byte is the type (LED), second is the LED number, next is the value
   bytesToSend[0] = LED_TYPE;
   bytesToSend[1] = byte(LEDNumber); 
   bytesToSend[2] = byte(brightnessValue);
   serialConnection.write(bytesToSend); //send the LED value over serial
 }
-
-
 
 //Helper method for drawing status updates, telling the user if an illucia unit connected
 
@@ -352,6 +349,7 @@ void setConnectionStatus(boolean isConnected) {
     }
     else { //the image didn't load, just use text
       text("Connected!", width/2, height/2);
+      redraw();
     }
   } 
   else {    //still waiting for connection
@@ -360,7 +358,7 @@ void setConnectionStatus(boolean isConnected) {
       image(connectionStatusImages[0], width/2 - connectionStatusImages[0].width/2, height/2 - connectionStatusImages[0].height/2);
     } 
     else //the image didn't load, just use text
-    text("Connecting...", width/2, height/2);
+    text("Hello World", width/2, height/2);
   }
   redraw(); //need to tell the sketch to redraw() because of the noLoop() call made earlier
 }
@@ -395,6 +393,7 @@ void connectOverSerial() {
 
   String[] availableSerialPorts = Serial.list();
 
+  
   for (int i = 0; i < availableSerialPorts.length; i++) {
 
     if (!serialConnected) {
