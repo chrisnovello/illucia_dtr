@@ -1,6 +1,6 @@
 illucia dtr
 a patchbay controller 
-by [Chris Novello](http://chrisnovello.com) ([@paperkettle](http://www.twitter.com/paperkettle))   
+by [Chris Novello](http://chrisnovello.com) ([@chrisnovello](http://www.twitter.com/chrisnovello))   
 
 It uses physical jacks and patch cables as an interface for making connections between computer programs. 
 
